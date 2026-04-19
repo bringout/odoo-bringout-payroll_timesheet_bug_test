@@ -22,7 +22,7 @@ via `psql_company_lock_id`, PostgreSQL rejects the write.
 Meant to be paired with `multi_company_example_ba_hr_si_data` on a
 test bed. See README.md for the expected behavior matrix.
     """,
-    "version": "16.0.1.1.0",
+    "version": "16.0.1.1.1",
     "author": "bring.out doo Sarajevo",
     "website": "https://www.bring.out.ba",
     "category": "Human Resources/Payroll",

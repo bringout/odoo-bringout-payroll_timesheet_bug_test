@@ -1,6 +1,6 @@
 [project]
 name = "odoo-bringout-payroll_timesheet_bug_test"
-version = "16.0.1.1.0"
+version = "16.0.1.1.1"
 description = "Deliberately-buggy wizard that rewrites all timesheets' company_id — demonstrates PSQL RLS enforcement"
 authors = [
     { name = "Ernad Husremovic", email = "hernad@bring.out.ba" }

@@ -113,8 +113,14 @@ class PayrollTimesheetBugWizard(models.TransientModel):
         try:
             # === THE BUG ===
             # Missing: ("company_id", "=", some_expected.id)
-            # search([]) returns every row this session can see.
-            lines = self.env["account.analytic.line"].search([])
+            # .sudo() bypasses ORM record rules — the user's company
+            # switcher state is ignored. On a non-RLS session, this is
+            # equivalent to "what every row in the DB actually is" and
+            # the buggy write cascades everywhere. On a RLS-locked
+            # session, PostgreSQL still filters the SELECT to the
+            # locked company (sudo cannot override SQL-level RLS), so
+            # the same line of code only touches one company's rows.
+            lines = self.env["account.analytic.line"].sudo().search([])
             count = len(lines)
             if count:
                 lines.write({"name": tag})
