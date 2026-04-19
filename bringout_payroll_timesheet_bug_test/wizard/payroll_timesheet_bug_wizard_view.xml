@@ -12,40 +12,45 @@
                     bugs. Without
                     <code>multi_company_protect_psql_payroll</code> +
                     a user locked via <code>psql_company_lock_id</code>,
-                    the bugs manifest silently. With RLS active for the
-                    current user, PostgreSQL catches them.
+                    the bugs manifest silently across all companies.
+                    With RLS active for the current user, bugs are
+                    contained to the locked company.
                 </div>
 
                 <notebook>
                     <page string="A — Count All Employees (read bug)">
                         <p>
-                            Buggy query: <code>env['hr.employee'].sudo().search([])</code>.
-                            No company filter. A report built like this
-                            shows total headcount across the whole database
-                            to an admin (bug manifests) but only the locked
-                            company's headcount to a payroll clerk
-                            (RLS contains the bug).
+                            Buggy query:
+                            <code>env['hr.employee'].sudo().search([])</code>.
+                            No company filter. A headcount report built
+                            like this shows total employees across the
+                            whole database to an admin (bug manifests)
+                            but only the locked company's headcount to
+                            a payroll clerk (RLS contains the bug).
                         </p>
                         <group attrs="{'invisible': [('scenario', '!=', 'count_employees')]}">
                             <field name="employee_count"/>
                             <field name="employee_breakdown" widget="text"/>
                         </group>
                     </page>
-                    <page string="B — Reassign All Timesheets (write bug)">
+                    <page string="B — Tag All Timesheets (write bug)">
                         <p>
                             Buggy call:
-                            <code>env['account.analytic.line'].search([]).write(&#123;'company_id': target&#125;)</code>.
-                            Admin path rewrites every timesheet silently.
-                            On an RLS-locked session, <code>WITH CHECK</code>
-                            rejects any write to the target if it is not
-                            the locked company.
+                            <code>env['account.analytic.line'].search([]).write(&#123;'name': tag&#125;)</code>.
+                            Intended as a benign "mark timesheets as
+                            reviewed" routine, but missing the company
+                            filter. Admin path overwrites every
+                            timesheet's <code>name</code> field — including
+                            other companies' — with
+                            <code>"BUG-B run by &lt;user&gt;"</code>, producing
+                            immediately visible pollution in the
+                            Timesheets list. On an RLS-locked session
+                            only the locked company's rows are visible
+                            to <code>search([])</code>, so only those get
+                            tagged — the bug is fully contained.
                         </p>
-                        <group>
-                            <field name="target_company_id"
-                                   options="{'no_create': True, 'no_open': True}"/>
-                        </group>
                         <group string="Result"
-                               attrs="{'invisible': [('scenario', '!=', 'rewrite_timesheets')]}">
+                               attrs="{'invisible': [('scenario', '!=', 'tag_timesheets')]}">
                             <field name="lines_affected"/>
                             <field name="before_state" widget="text"/>
                             <field name="after_state" widget="text"/>
@@ -63,11 +68,11 @@
                             type="object"
                             string="Run: Count Employees (Bug A)"
                             class="btn-primary"/>
-                    <button name="action_run_rewrite_bug"
+                    <button name="action_run_tag_bug"
                             type="object"
-                            string="Run: Reassign Timesheets (Bug B)"
+                            string="Run: Tag All Timesheets (Bug B)"
                             class="btn-danger"
-                            confirm="This will ATTEMPT to rewrite every analytic line's company_id. Only safe to run on a test bed."/>
+                            confirm="This will overwrite the 'name' field on every timesheet entry this session can see. Only safe on a test bed."/>
                     <button string="Close" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

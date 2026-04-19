@@ -21,20 +21,23 @@ accidentally returns the correct value.
 | Admin / unlocked user | **Bug manifests.** Returns total headcount across all 5 companies (e.g. 10). |
 | Payroll clerk locked to CompanyBA-1 | **Bug contained.** Returns 3 — only Bosnia employees visible. |
 
-## Bug B — Reassign All Timesheets (write bug, destructive)
+## Bug B — Tag All Timesheets (write bug, visible in UI)
 
 ```python
-env['account.analytic.line'].search([]).write({'company_id': target_id})
+tag = f"BUG-B run by {env.user.name}"
+env['account.analytic.line'].search([]).write({'name': tag})
 ```
 
-A "bulk-fix" routine forgets the company filter on search and blindly
-rewrites every returned row's `company_id`.
+A "mark all timesheets as reviewed by me" routine forgets the company
+filter on search and overwrites every returned row's `name` field
+(the description that shows up in the Timesheets list). The effect is
+immediately visible in *Timesheets → All Timesheets* — no need to
+inspect the DB.
 
 | Session | Result |
 | --- | --- |
-| Admin / unlocked user | **Bug manifests.** All analytic lines get their `company_id` rewritten. Silent cross-company data corruption. |
-| Locked clerk, target = locked company | **Bug contained.** `USING` filter returns only locked-company rows; in-company write succeeds. |
-| Locked clerk, target ≠ locked company | **Bug caught.** `WITH CHECK` rejects with `new row violates row-level security policy`. Transaction rolled back. |
+| Admin / unlocked user | **Bug manifests.** Every timesheet in the database gets its `name` overwritten with `"BUG-B run by …"` — including Slovenia, both Croatias, Bosnia. Visible in the UI right away. |
+| Locked payroll clerk | **Bug contained.** `USING` filter returns only the clerk's company rows; only those get tagged. Other companies' timesheets untouched. No error. |
 
 ## Installation
 
