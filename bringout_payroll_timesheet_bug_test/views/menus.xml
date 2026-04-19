@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Top-level app-like menu so the wizard is easy to find even if
+         payroll / HR menus are nested. -->
+    <menuitem id="menu_payroll_bug_test_root"
+              name="Bug Testing"
+              sequence="100"
+              groups="hr.group_hr_user"/>
+
+    <menuitem id="menu_payroll_bug_test_timesheet"
+              name="Multi-Company Bug Reproductions"
+              parent="menu_payroll_bug_test_root"
+              action="action_payroll_timesheet_bug_wizard"
+              sequence="10"/>
+
+</odoo>

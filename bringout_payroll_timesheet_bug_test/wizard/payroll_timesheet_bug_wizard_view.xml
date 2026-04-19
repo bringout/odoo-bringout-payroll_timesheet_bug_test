@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_payroll_timesheet_bug_wizard_form" model="ir.ui.view">
+        <field name="name">payroll.timesheet.bug.wizard.form</field>
+        <field name="model">payroll.timesheet.bug.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Multi-Company Bug Reproductions">
+                <div class="alert alert-warning" role="alert">
+                    <strong>Deliberately-buggy demo wizard.</strong>
+                    Two scenarios that reproduce classic multi-company
+                    bugs. Without
+                    <code>multi_company_protect_psql_payroll</code> +
+                    a user locked via <code>psql_company_lock_id</code>,
+                    the bugs manifest silently. With RLS active for the
+                    current user, PostgreSQL catches them.
+                </div>
+
+                <notebook>
+                    <page string="A — Count All Employees (read bug)">
+                        <p>
+                            Buggy query: <code>env['hr.employee'].sudo().search([])</code>.
+                            No company filter. A report built like this
+                            shows total headcount across the whole database
+                            to an admin (bug manifests) but only the locked
+                            company's headcount to a payroll clerk
+                            (RLS contains the bug).
+                        </p>
+                        <group attrs="{'invisible': [('scenario', '!=', 'count_employees')]}">
+                            <field name="employee_count"/>
+                            <field name="employee_breakdown" widget="text"/>
+                        </group>
+                    </page>
+                    <page string="B — Reassign All Timesheets (write bug)">
+                        <p>
+                            Buggy call:
+                            <code>env['account.analytic.line'].search([]).write(&#123;'company_id': target&#125;)</code>.
+                            Admin path rewrites every timesheet silently.
+                            On an RLS-locked session, <code>WITH CHECK</code>
+                            rejects any write to the target if it is not
+                            the locked company.
+                        </p>
+                        <group>
+                            <field name="target_company_id"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group string="Result"
+                               attrs="{'invisible': [('scenario', '!=', 'rewrite_timesheets')]}">
+                            <field name="lines_affected"/>
+                            <field name="before_state" widget="text"/>
+                            <field name="after_state" widget="text"/>
+                            <field name="error_message" widget="text"
+                                   attrs="{'invisible': [('error_message', '=', False)]}"/>
+                        </group>
+                    </page>
+                </notebook>
+
+                <field name="scenario" invisible="1"/>
+                <field name="finished" invisible="1"/>
+
+                <footer>
+                    <button name="action_run_count_bug"
+                            type="object"
+                            string="Run: Count Employees (Bug A)"
+                            class="btn-primary"/>
+                    <button name="action_run_rewrite_bug"
+                            type="object"
+                            string="Run: Reassign Timesheets (Bug B)"
+                            class="btn-danger"
+                            confirm="This will ATTEMPT to rewrite every analytic line's company_id. Only safe to run on a test bed."/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payroll_timesheet_bug_wizard" model="ir.actions.act_window">
+        <field name="name">Run Multi-Company Bug Reproductions</field>
+        <field name="res_model">payroll.timesheet.bug.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>
