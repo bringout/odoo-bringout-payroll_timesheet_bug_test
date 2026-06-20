@@ -1,0 +1,11 @@
+{
+  "exclude": [
+    "demo",
+    "tests"
+  ],
+  "i18n": [
+    "bs",
+    "hr",
+    "sr"
+  ]
+}
