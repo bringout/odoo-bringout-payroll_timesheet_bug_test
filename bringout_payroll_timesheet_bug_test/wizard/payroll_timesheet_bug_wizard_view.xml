@@ -28,7 +28,7 @@
                             but only the locked company's headcount to
                             a payroll clerk (RLS contains the bug).
                         </p>
-                        <group attrs="{'invisible': [('scenario', '!=', 'count_employees')]}">
+                        <group invisible="scenario != 'count_employees'">
                             <field name="employee_count"/>
                             <field name="employee_breakdown" widget="text"/>
                         </group>
@@ -50,12 +50,12 @@
                             tagged — the bug is fully contained.
                         </p>
                         <group string="Result"
-                               attrs="{'invisible': [('scenario', '!=', 'tag_timesheets')]}">
+                               invisible="scenario != 'tag_timesheets'">
                             <field name="lines_affected"/>
                             <field name="before_state" widget="text"/>
                             <field name="after_state" widget="text"/>
                             <field name="error_message" widget="text"
-                                   attrs="{'invisible': [('error_message', '=', False)]}"/>
+                                   invisible="error_message == False"/>
                         </group>
                     </page>
                 </notebook>
