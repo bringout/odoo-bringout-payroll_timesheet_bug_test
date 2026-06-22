@@ -1,0 +1,51 @@
+# Auto-build + publish this addon's wheel(s) to the Forgejo PyPI registry, gated on the
+# pushed commit message. Branch name = Odoo series. Org routing (public oss-vendors /
+# private bringout) + pyproject-from-manifest are handled by core_0/scripts/
+# publish_addon_wheels.py. Needs a `native` runner + the org/repo secret
+# PYPI_PUBLISH_TOKEN. Managed by core_0/scripts/rollout_publish_workflow.py.
+#
+# Commit-message triggers (in priority order):
+#   [republish-<module>]  re-publish ONLY <module>, replacing the same-version wheel
+#                         (repeatable: [republish-a][republish-b]) — e.g. [republish-ba_payroll]
+#   [republish]           re-publish ALL modules in the repo, replacing same-version wheels
+#   [publish-<module>]    publish ONLY <module> (new version), NOT the whole repo
+#                         (repeatable) — e.g. [publish-ba_payroll]
+#   [publish]             publish ALL modules in the repo (new versions only)
+# The per-<module> forms avoid re-publishing every module of a large multi-module repo.
+name: publish-wheel
+on:
+  push:
+    branches: ["16.0", "17.0", "18.0", "19.0"]
+jobs:
+  publish:
+    if: contains(github.event.head_commit.message, '[publish') || contains(github.event.head_commit.message, '[republish')
+    runs-on: native
+    steps:
+      - name: checkout addon repo
+        uses: actions/checkout@v4
+      - name: checkout core_0
+        uses: actions/checkout@v4
+        with:
+          repository: bringout/core_0
+          path: .core_0
+          token: ${{ secrets.PYPI_PUBLISH_TOKEN }}
+      - name: build + publish wheel(s)
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_PUBLISH_TOKEN }}
+          ODOO_SERIES: ${{ github.ref_name }}
+          REPO: ${{ github.event.repository.name }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          python3 -m venv /tmp/venv && . /tmp/venv/bin/activate
+          pip install -q build twine
+          # Parse the commit message: per-<module> scope (--only) beats whole-repo;
+          # republish (--replace, overwrite same version) beats publish (new only).
+          REPUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[republish-[a-z0-9_]+\]' | sed -E 's/.*\[republish-([a-z0-9_]+)\].*/\1/' | paste -sd, -)
+          PUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[publish-[a-z0-9_]+\]' | sed -E 's/.*\[publish-([a-z0-9_]+)\].*/\1/' | paste -sd, -)
+          ARGS=""
+          if [ -n "$REPUB_MODS" ]; then ARGS="--replace --only $REPUB_MODS";
+          elif printf '%s' "$MSG" | grep -q '\[republish\]'; then ARGS="--replace";
+          elif [ -n "$PUB_MODS" ]; then ARGS="--only $PUB_MODS"; fi
+          echo "publish args: ${ARGS:-<all modules>}"
+          python3 .core_0/scripts/publish_addon_wheels.py --repo-dir . --repo-name "$REPO" $ARGS
