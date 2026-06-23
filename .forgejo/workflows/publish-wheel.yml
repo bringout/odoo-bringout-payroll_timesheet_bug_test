@@ -41,8 +41,8 @@ jobs:
           pip install -q build twine
           # Parse the commit message: per-<module> scope (--only) beats whole-repo;
           # republish (--replace, overwrite same version) beats publish (new only).
-          REPUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[republish-[a-z0-9_]+\]' | sed -E 's/.*\[republish-([a-z0-9_]+)\].*/\1/' | paste -sd, -)
-          PUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[publish-[a-z0-9_]+\]' | sed -E 's/.*\[publish-([a-z0-9_]+)\].*/\1/' | paste -sd, -)
+          REPUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[republish-[a-z0-9_]+\]' | sed -E 's/.*\[republish-([a-z0-9_]+)\].*/\1/' | paste -sd, - || true)
+          PUB_MODS=$(printf '%s' "$MSG" | grep -oE '\[publish-[a-z0-9_]+\]' | sed -E 's/.*\[publish-([a-z0-9_]+)\].*/\1/' | paste -sd, - || true)
           ARGS=""
           if [ -n "$REPUB_MODS" ]; then ARGS="--replace --only $REPUB_MODS";
           elif printf '%s' "$MSG" | grep -q '\[republish\]'; then ARGS="--replace";
